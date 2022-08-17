@@ -1,0 +1,571 @@
+---
+title: "IST687_Final_Project"
+output: word_document
+date: '2022-05-5'
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+**Phase 1-Loading the Data with Appropriate Libraries**.
+
+```{r}
+# Phase-1
+# install.packages('tidyverse')
+library(tidyverse)
+data <- read_csv("https://intro-datascience.s3.us-east-2.amazonaws.com/Resort01.csv")
+head(data)
+```
+
+# Phase-2 Exploring the Data
+```{r}
+# Checking if our data has missing values or not using is.na
+which(colSums(is.na(data))>0)
+
+# Using commands such as str(),summary() or glimpse()
+# Examining the structure of the data.
+str(data)
+summary(data)
+```
+# Reserved Room Type and Assigned Room Type
+```{r}
+# Using table() to get the count of each Reserved Room Type.
+table(data$ReservedRoomType)
+
+# Using table() to get the count of each Assigned Room Type.
+table(data$AssignedRoomType)
+```
+
+# No. of Bookings Canceled v/s Not Canceled
+```{r}
+# Getting the count of no. of bookings that have been canceled v/s not canceled.
+# We have around 28938 bookings that have not been canceled and 11122 bookings that got canceled.
+# 1 = cancelled 0 = not cancelled
+table(data$IsCanceled)
+prop.table(table(data$IsCanceled))
+
+
+```
+
+```{r}
+#codes 0 if assigned room type is same as reserved room type, 1 if it changed (reason unknown)
+data$TypeChange <- ifelse(data$ReservedRoomType == data$AssignedRoomType, 0, 1) 
+#Count to check if the room type is same as assigned or not.
+table(data$TypeChange)
+prop.table(table(data$TypeChange))
+pie(table(data$TypeChange), labels = c('Same Room','Different Room'), main = 'Pie Chart')
+```
+```{r}
+#Creating datasets for cancelled vs non-cancelled stays
+canc <- data[which(data$IsCanceled==1),]
+head(canc)
+nocanc <- data[which(data$IsCanceled==0),]
+head(nocanc)
+```
+
+## Histograms, Boxplots, & Other Exploratory Data
+
+```{r}
+#Examining differences in numeric variables based on cancellation status:
+boxplot(BookingChanges ~ IsCanceled, data=data)
+boxplot(StaysInWeekendNights ~ IsCanceled, data=data)
+boxplot(StaysInWeekNights ~ IsCanceled, data=data)
+boxplot(TotalOfSpecialRequests ~ IsCanceled, data=data)
+```
+```{r}
+# Histograms for LeadTime
+hist(canc$LeadTime)
+```
+
+```{r}
+# Loading the necessary libraries
+library(dplyr)
+
+# We have the count of cancelations that have happened from a particular country.
+can_count<-canc%>%count(Country,IsCanceled,sort = TRUE)
+head(can_count,5)
+
+# Barplot on top 5 countries
+library(ggplot2)
+
+#Cancelled 
+ggplot(can_count[1:5,], aes(x=Country, y=n, fill = Country)) + geom_bar(stat="identity") + 
+  labs(x="Percentage", y="Proportion")
+
+# We have the count of bookings that have happened from a particular country.
+nocan_count<-nocanc%>%count(Country,IsCanceled,sort = TRUE)
+head(nocan_count)
+
+#Not Cancelled
+ggplot(nocan_count[1:5,], aes(x=Country, y=n, fill = Country)) + geom_bar(stat="identity") + 
+  labs(x="Percentage", y="Proportion")
+```
+  
+
+```{r}
+# Customer Type
+table(data$CustomerType)
+```
+
+
+```{r}
+# Barplot-CustomerType v/s Frequency Count
+
+bar1 <- table(data$CustomerType, data$IsCanceled)
+barplot(bar1, main="Customer Type",
+  xlab="IsCanceled",ylab="Count",col=c("blue","red","lightgreen","black"),
+  legend = rownames(bar1), beside=TRUE)
+
+# The below graph depicts that most no. of bookings that have stayed intact have been made by the customers that are transient i.e. they stayed for a short duration.
+
+# Most no. of cancellations(1) have also been made by the Transient type Customers.
+```
+
+
+```{r}
+# Barplot- AssignedRoomType v/s IsCancelled
+
+bar2<- table(data$IsCanceled, data$AssignedRoomType)
+        barplot(bar2, main="AssignedRoomType vs Is Cancelled",
+                xlab="Canceled",ylab='Count',col=c("darkblue","red"),
+                legend = rownames(bar2),beside = TRUE)
+
+# The below barplot clearly shows us that we have Maximum Cancellations fir Assigned Room Type A and Maximum bookings for the same room as well.        
+```
+
+
+```{r}
+#Reserved Type vs IsCancelled
+
+bar3<-table(data$IsCanceled,data$ReservedRoomType)
+barplot(bar3, main="Reserved Room Type vs IsCancelled",
+                xlab="Canceled",ylab = 'Count',col=c("darkblue","red"),
+                legend = rownames(bar3),beside = TRUE)
+
+# The below barplot depicts that most no. of bookings have been reserved for Room A and and the same room has been among the most no. of cancellations as well.
+
+# Least no. of Reservations have been made for Rooms B, L and P.
+```
+
+
+```{r}
+# Barplot- Marketing Segment vs IsCanceled
+bar4<-table(data$MarketSegment,data$IsCanceled)
+barplot(bar4, main="Marketing Segment vs IsCanceled",horiz=TRUE,
+                xlab="Count",ylab='Canceled',col=c("darkblue","red","lightgreen","pink","yellow","#009999"),
+                legend = rownames(bar4,"top"),beside = TRUE)
+
+# The below barplot shows that we have Online TA Marketing Segment had Maximum Cancellations and Bookings.
+```
+
+```{r}
+# DepositType vs IsCanceled
+bar8 <- ggplot(canc, aes(x=DepositType, y=IsCanceled,fill= Meal)) + geom_bar(stat="identity") + 
+  labs(x="Deposit Type", y="Count")
+bar8
+
+# The below barplot depicts that customers that made no deposit and had BB (Bread and Breakfast) meal were amongst the majority to get their booking canceled.
+
+# Similarly, the people that didn't get any refund and had BB (Bread and Breakfast) meal were amongst the majority to get their booking canceled.
+
+# This means that the hotel should pay attention to the following things:
+# A.) A minimum deposit constraint to reserve the room. 
+# B.) They should have a refund policy in place to avoid cancellations.
+# C.) They should avoid giving BB (Bread and Breakfast) meal.
+```
+
+```{r}
+# Barplot-CustomerType v/s TotalOfSpecialRequest
+
+bar9 <- ggplot(canc, aes(x=CustomerType, y=IsCanceled, fill = MarketSegment)) + geom_col() + 
+  labs(x="Customer Type", y="Count")
+bar9
+# Transient-party – when the booking is transient, but is associated to at least other transient booking.
+# Transient – when the booking is not part of a group or contract, and is not associated to other transient booking;
+
+# The below barplot depicts that 'Transient' Customers who got their booking done from Online TA(Travel Agents) are the ones whose booking has been mostly canceled.
+
+# Customer Type as 'Transient-Party' and Market Segment being 'Groups' is the 2nd highest category among hotel cancellations.
+```
+
+
+```{r}
+# Barplot- ReservedRoomType v/s IsCanceled.
+ggplot(canc, aes(x = ReservedRoomType, y =IsCanceled, fill = DepositType,label = DepositType)) + geom_col()
+
+# Reserved Room Type A is having maximum cancellations due to No deposit being made by the customer while booking.
+
+# 2nd reason for cancellation is No refund being given by the Hotel for booking get cancelled due to unavoiadable circumstances.
+```
+
+# World Map
+```{r}
+# Loading the necessary libraries and packages.
+library(ggmap)
+library(mapproj)
+# install.packages("rworldmap")
+library(rworldmap)
+
+visitedMap <- joinCountryData2Map(can_count, 
+                                  joinCode = "ISO3",
+                                  nameJoinColumn = "Country",
+                                  nameCountryColumn = "Country",
+                                  mapResolution="coarse" ,
+                                  verbose = FALSE
+                                  )
+par(mai=c(0,0,0.2,0),xaxs="i",yaxs="i")
+
+mapParams <- mapCountryData(visitedMap, 
+                            nameColumnToPlot="n",
+                            oceanCol = "azure2",
+                            missingCountryCol = gray(.8),
+                            addLegend = F,
+                            mapTitle = "Hotel Cancelations Across Countries",
+                            catMethod='categorical')
+
+# The below graoh depicts the following results:
+
+# A.) The diverging color scale depicts that the countries in the Europe have high cancellations (especially Portugal, Spain, France, Great Britain etc.) as compared to rest of the world. They have been displayed in the red color palette.
+
+# B.) In Orange color palette, we have Russia  and United States with next highest cancellations.
+
+# C.) In yellow we have the countries(India,Argentina,Australia) with less cancellations.
+```
+```{r}
+# Country and StaysInWeekendNights
+can_count_wn<-canc%>%group_by(Country)%>%
+              summarise(Weekend_Nights=sum(StaysInWeekendNights))
+
+# Countries with high WeekendNight Preference.
+high<-can_count_wn[order(-can_count_wn$Weekend_Nights),]
+head(high)
+
+
+visitedMap <- joinCountryData2Map(high, 
+                                  joinCode = "ISO3",
+                                  nameJoinColumn = "Country",
+                                  nameCountryColumn = "Country",
+                                  mapResolution="coarse" ,
+                                  verbose = FALSE)
+
+mapParams <- mapCountryData(visitedMap, 
+                            nameColumnToPlot="Weekend_Nights",
+                            oceanCol = "azure2",
+                            missingCountryCol = gray(.8),
+                            addLegend = F,
+                            mapTitle = "Stay in Weekend Nights",
+                            catMethod='categorical')
+
+
+# The below graph depicts the following results:
+
+# A.) The diverging color scale depicts that the people from Portugal have the most no. of bookings for Weekend.
+
+# B.) In Orange color palette, we have Russia  and United States with next highest cancellations.
+
+# C.) In yellow we have the countries(India,Argentina,Australia) with less cancellations.
+
+```
+
+```{r}
+# Count of StaysInWeekendNights vs ReservedRoomType
+# StaysInWeekendNights-Integer, Number of weekend nights (Saturday or Sunday) the guest stayed or booked to stay at the hotel
+
+weekeend_rooms<-table(data$ReservedRoomType,data$StaysInWeekendNights)
+weekeend_rooms
+```
+
+
+```{r}
+# Special Requests by Type of Customers
+# Special Request-Number of special requests made by the customer (e.g. twin bed or high floor).
+
+bar5<-table(canc$TotalOfSpecialRequests,canc$CustomerType)
+barplot(bar5,main="SpecialRequests vs CustomerType",xlab='CustomerType',ylab='Count',legend = rownames(bar5,"top"),col=c("darkblue","red","lightgreen","pink","yellow","orange"),beside = TRUE)
+```
+
+
+```{r}
+# Creating a new column Kids from Children and Babies
+canc['Kids']<-canc['Children']+canc['Babies']
+nocanc['Kids']<-nocanc['Children']+nocanc['Babies']
+
+# Dropping columns Children and Babies.
+canc<-canc%>%select(-one_of('Babies','Children'))
+nocanc<-nocanc%>%select(-one_of('Babies','Children'))
+
+# Checking our dataset
+head(canc)
+head(nocanc)
+```
+
+```{r}
+# Stacked Barplot
+# MealType vs StaysInWeekendNights
+bar7<-table(data$Meal,data$StaysInWeekendNights)
+barplot(bar7,main="MealType vs StaysInWeekendNights",xlab='StaysInWeekendNights',ylab='Count',legend = rownames(bar7,"top"),col=c("blue","red","lightgreen","pink","yellow"))
+
+# On WeekendStays: Bread and Breakfast (BB) is the preferred Meal Choice of customers.
+```
+
+```{r}
+# Percentage of guests that revisit hotel.
+rep<-table(data$IsRepeatedGuest)
+prop.table(rep)
+# This shows us that we have only 4.4% guests that revisit our hotel.
+```
+
+# Creating a SVM Model
+```{r}
+# Installing the required packages and libraries.
+# install.packages(c("kernlab","caret"))
+library(kernlab)
+library(caret)
+```
+```{r}
+# Storing all numerical variables in a variable called num_data
+
+# Creating a single column for Babies and Children
+data['Kids']<-data['Children']+data['Babies']
+
+# Dropping column= Children and Babies
+data<-data%>%select(-one_of('Babies','Children'))
+
+num_data<-data.frame(LeadTime=data$LeadTime,
+                     StaysInWeekendNights=data$StaysInWeekendNights,
+                     StaysInWeekNights=data$StaysInWeekNights,
+                     Adults<-data$Adults,
+                     Kids=data$Kids,
+                     IsRepeatedGuest<-data$IsRepeatedGuest,
+                     PreviousCancellations<-data$PreviousCancellations,
+                     RequiredCarParkingSpaces<-data$RequiredCarParkingSpaces,
+                     TotalOfSpecialRequests<-data$TotalOfSpecialRequests,
+                     TypeChange<-data$TypeChange,
+                     IsCanceled=as.factor(data$IsCanceled)
+                     )
+
+head(num_data)
+```
+# Train-Test Split
+```{r}
+# Creating  train-test split, i.e. split our Hotel data into a train set and a test set 
+# Randomly selecting 70 percent of the indices from Hotel and using them to subset from it to create a train set, while using the remaining 30 percent for the test set:
+
+trainList <- createDataPartition(y=num_data$IsCanceled, p=.70, list=FALSE)
+trainSet <- num_data[trainList,]
+testSet <- num_data[-trainList,]
+```
+
+```{r}
+# Dimensions of both train and test set.
+dim(trainSet)
+dim(testSet)
+```
+
+```{r}
+# We are now ready to train an SVM model by fitting it to the train set and letting it learn from its data.
+
+# data- Training data set
+# kernel-function used in training and predicting. 'rbfdot' is Radial Basis kernel 'Gaussian'
+# kpar-the list of hyper parameters. For rbfdot we set the kpar to be automatic.
+# C is Cost parameter which determines how much model should be penalized for mis-classification or error.
+# cross-It tells the quality of the model.
+# prob.model-if set to TRUE builds a model for calculating class probabilities or in case of regression, calculates the scaling parameter of the Laplacian distribution fitted on the residuals.
+
+svmOut<-ksvm(IsCanceled ~ ., data=trainSet, kernel= "rbfdot", kpar = "automatic", 
+     C = 5, cross = 3, prob.model = TRUE)
+svmOut
+
+# We are getting a cross validation error of around 22%
+# It shows that we can have an error of around 22% in our model.
+```
+
+```{r}
+# Using the predict() on pur model to get the correct outcome.
+svmPred<-predict(svmOut,  # use the built model "svmOutput" to predict 
+                 testSet, # use testData to generate predictions
+                 type='response'  # request "credit" from the prediction process
+                 )
+head(svmPred)
+```
+
+```{r}
+# Comparing few results from our testset and our Prediction and storing them in a dataframe.
+comp<-data.frame(testSet$IsCanceled,svmPred)
+head(comp)
+
+#Creating a Confusion Matrix
+table(testSet$IsCanceled,svmPred)
+
+# The confusion Matrix tells us that:
+
+# True Positive(TP): We have 1195 cases in which the model predicted the booking IsCanceled and it is actually Canceled.
+# True Negative (TN) : we have 8109 cases in which the model predicted that the booking is not canceled and it was not canceled.
+# False Positive (FP): We have 2141 cases in which model predicted that the booking is canceled but actually it was not.
+# False Negative (FN):  We have 572 cases in which model predicted that booking is not canceled but actually it was canceled.
+
+# We should have minimum values of FP and FN as they form our Type-1 and Type-2 error.
+```
+
+
+```{r}
+# We can also generate the same confusion Matrix with the help of caret package.
+# install.packages('e1071')
+library(e1071)
+confusionMatrix(testSet$IsCanceled, svmPred)
+
+# Accuracy of the Model comes to be 77.86%.
+```
+
+*Deploying a Tree Model on this*
+```{r}
+#Loading the required libraries.
+library(rpart)
+treeModel <- rpart(IsCanceled ~ ., data = trainSet, method = "class")
+```
+
+```{r}
+# Installing the required packages
+# install.packages('rpart.plot')
+library(rpart.plot)
+rpart.plot(treeModel)
+```
+```{r}
+# Predicting on Test set
+prediction <- treeModel %>% predict(testSet, type="class")
+confusionMatrix(testSet$IsCanceled, prediction)
+
+# # The confusion Matrix tells us that:
+
+# True Positive(TP): We have 1260 cases in which the model predicted the booking IsCanceled and it is actually Canceled.
+# True Negative (TN) : we have 8005 cases in which the model predicted that the booking is not canceled and it was not canceled.
+# False Positive (FP): We have 2076 cases in which model predicted that the booking is canceled but actually it was not.
+# False Negative (FN):  We have 676 cases in which model predicted that booking is not canceled but actually it was canceled.
+
+# We should have minimum values of FP and FN as they form our Type-1 and Type-2 error.
+
+# Accuracy of the Model is 77.1%
+```
+
+*Association Rule Mining in R*
+```{r}
+# Installing the Required Packages
+# Arules and ArulesViz
+
+# install.packages(c("arules","arulesViz"))
+library("arules","arulesViz")
+```
+
+```{r}
+# We don't have any Missing Value in the data set. 
+# Creating factor variables.
+data_rules<-data.frame(IsCanceled=as.factor(data$IsCanceled),
+                       LeadTime=as.factor(data$LeadTime),
+                       StaysInWeekendNights=as.factor(data$StaysInWeekendNights),
+                       StaysInWeekNights=as.factor(data$StaysInWeekNights),
+                       Adults=as.factor(data$Adults),
+                       Meal=as.factor(data$Meal),
+                       Country=as.factor(data$Country),
+                       MarketSegment=as.factor(data$MarketSegment),
+                       IsRepeatedGuest=as.factor(data$IsRepeatedGuest),
+                       PreviousCancellations=as.factor(data$PreviousCancellations),
+                       ReservedRoomType=as.factor(data$ReservedRoomType),
+                       AssignedRoomType=as.factor(data$AssignedRoomType),
+                       BookingChanges=as.factor(data$BookingChanges),
+                       DepositType=as.factor(data$DepositType),
+                       CustomerType=as.factor(data$CustomerType),
+                       RequiredCarParkingSpaces=as.factor(data$RequiredCarParkingSpaces),
+                       TotalOfSpecialRequests=as.factor(data$TotalOfSpecialRequests),
+                       TypeChange=as.factor(data$TypeChange),
+                       Kids=as.factor(data$Kids)
+)
+```
+
+```{r}
+# Percentage of Bookings(0) and Cancellations(1) of the hotel.
+prop.table(table(data_rules$IsCanceled)) 
+```
+
+```{r}
+# Creating a Sparse transaction Matrix
+dataX<-as(data_rules,'transactions')
+```
+
+```{r}
+# Exploring 1st 5 observations
+inspect(dataX[1:10]) 
+```
+
+```{r}
+# Generating apriori rules with, support over 0.03 and confidence over 0.90, and trying to predict who would cancel:
+rules <- apriori(dataX, parameter=list(support=0.03, confidence=0.9), appearance=list(rhs='IsCanceled=1'))
+rules
+```
+
+```{r}
+# Getting the top 5 rules.
+inspect(rules[1:5])
+inspect(head(sort(rules,by='confidence'),5))
+
+# Based on confidence we have the best rules that define who would cancel their booking.
+# The 1st rule shows us that if the deposit type is 'Non Refund' and CustomerType is 'Transient' then the booking would get canceled.
+# The 2nd rule shows us that if the MarketSegment is Groups, DepositType is 'Non Refund' and CustomerType is 'Non Refund' then the booking would get canceled.
+# The 3rd rule shows that if the AssignedRoomType='A', DepositType='Non Refund' and CustomerType is 'Transient' then the booking would get canceled.
+
+```
+# Logistic Regression Model
+```{r}
+#testing a plain logistic regression without simulating
+#need to have a reference point for categorical variables of interest, so transforming to factors
+data$DepType <- as.factor(data$DepositType)
+levels(data$DepType) #no deposit will be the reference
+#that odds ratio for non-refundable deposit is absolutely huge but it does make logical sense
+
+data$CustType <- as.factor(data$CustomerType)
+#releveling customer type so that transient (most common customer type) is the reference
+data$CustType<-relevel(data$CustType,ref="Transient")
+
+
+m1 <- glm(IsCanceled ~ LeadTime + Adults + IsRepeatedGuest + BookingChanges + DepType + CustType + TotalOfSpecialRequests + Kids, data=data, family="binomial")
+summary(m1)
+#Model results show significant associations with all included predictors, such that greater lead time, greater numbers of adults and children, and having a non-refundable deposit type all increase odds of cancellation, while being a repeated guest, making a greater number of booking changes, making a refundable deposit, making a greater number of special requests, and being any type of customer other than transient all decreased odds of cancellation. 
+
+#since this is a logistic model, need to get odds ratios:
+or1 <- exp(cbind(OR=coef(m1), confint(m1)))
+or1
+
+#interaction of special requests x booking changes, as it's possible they might compound risk for cancellation:
+#m2 <- glm(IsCanceled ~ TotalOfSpecialRequests*BookingChanges, data=data, family="binomial")
+#summary(m2)
+#or2 <- exp(cbind(OR=coef(m2), confint(m2)))
+#or2
+```
+
+# Final Analysis.
+```{r}
+# Our results from the graph show us that the main reasons for cancellation are as follows:
+
+# A.) No deposit and No refund for Room Type-A.
+# B.) Transient Customer.
+# C.) Tickets being booked online by a TA(Travel Agent) or a Group.
+# D.) Large No. of special requests being made by Transient Customers.
+# E.) Meal is BB(Bed and Breakfast) or HB(Half board (breakfast and one other meal – usually dinner)
+# F.) Portugal has the most no. of cancellations being done.
+
+# In comparison with Apriori Rules we have:
+
+# A.) DepositType=Non Refund, CustomerType=Transient
+# B.) MarketSegment=Groups, DepositType=Non Refund, CustomerType=Transient
+# C.) AssignedRoomType=A, DepositType=Non Refund, CustomerType=Transient
+# D.) Country=PRT, DepositType=Non Refund, CustomerType=Transient
+# E.) DepositType=Non Refund, CustomerType=Transient, TotalOfSpecialRequests=0
+
+```
+
