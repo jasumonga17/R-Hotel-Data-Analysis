@@ -1,4 +1,4 @@
-# R-Hotel-Data-Analysis
+# R-Hotel Cancellations-Data-Analysis
 
 **Goal**: Analyzing booking cancellation trends in a European hotel dataset in depth was the primary goal of this project.
 The project's goal was to pinpoint the fundamental causes of reservation cancellations and provide the hotel with advice on how to cut losses.
