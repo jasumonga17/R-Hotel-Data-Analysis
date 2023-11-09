@@ -4,7 +4,7 @@
 The project's goal was to pinpoint the fundamental causes of reservation cancellations and provide the hotel with advice on how to cut losses.
 
 # Task
-•	Cleaned and analyzed the European hotel chain data set stored in an AWS S3 bucket using R-studio.
+•	Cleaned and analyzed the European hotel chain data set stored in an **AWS S3 bucket** using **R-studio**.
 
 •	Performed feature engineering to extract relevant features that were useful for building the **SVM** and **logistic regression** machine learning algorithms.
 
